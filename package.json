@@ -4,6 +4,7 @@
   "description": "questions and answers service",
   "main": "server.js",
   "scripts": {
+    "lint": "eslint . --fix",
     "start": "nodemon server.js",
     "test": "mocha"
   },
