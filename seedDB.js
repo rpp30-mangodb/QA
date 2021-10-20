@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-// const csvtojson = require('csvtojson');
 const csv = require('csv-parser');
 const Answer = require('./models/answerModel');
 const Photo = require('./models/photoModel');
@@ -21,9 +20,44 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
   console.log('we are connected!');
-  parsePhotos();
-  parseAnswers();
-  parseQuestions();
+  // check if collection exists, if so drop to avoid duplicates
+  db.db.listCollections().toArray(function(err, names) {
+    if (err) {
+      console.log(err);
+    } else {
+      for (i = 0; i < names.length; i++) {
+        console.log(names[i].name);
+        if (names[i].name === 'photos') {
+          db.db.dropCollection(
+            'photos',
+            function(err, result) {
+              console.log('photos dropped');
+            }
+          );
+        }
+        if (names[i].name === 'answers') {
+          db.db.dropCollection(
+            'answers',
+            function(err, result) {
+              console.log('answers dropped');
+            }
+          );
+        }
+        if (names[i].name === 'questions') {
+          db.db.dropCollection(
+            'questions',
+            function(err, result) {
+              console.log('questions dropped');
+            }
+          );
+        }
+      }
+      parsePhotos();
+    }
+  });
+  // parsePhotos();
+  // parseAnswers();
+  // parseQuestions();
 });
 
 var parsePhotos = () => {
@@ -48,6 +82,7 @@ var parsePhotos = () => {
     })
     .on('end', () => {
       console.log('read csv photo file');
+      parseAnswers();
     });
 };
 
@@ -86,6 +121,7 @@ var parseAnswers = () => {
     })
     .on('end', () => {
       console.log('read csv answer file');
+      parseQuestions();
     });
 };
 
@@ -126,4 +162,3 @@ var parseQuestions = () => {
       console.log('read csv question file!');
     });
 };
-
