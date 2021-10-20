@@ -10,3 +10,7 @@ app.use(cors());
 app.listen(PORT, function () {
   console.log(`CORS-enabled web server listening on port ${PORT}`);
 });
+
+app.post('/qa/questions', (req, res) => {
+
+});
