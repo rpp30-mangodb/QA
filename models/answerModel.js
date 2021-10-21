@@ -13,6 +13,6 @@ const answerSchema = new Schema({
   // 'photos': [{type: String}] // are users required to upload photos?
 });
 
-const Answer = mongoose.model('Answer', answerSchema);
+const Answer = mongoose.model('Answer', answerSchema, 'answers');
 
 module.exports = Answer;
