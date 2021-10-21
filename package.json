@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "lint": "eslint . --fix",
-    "seed": "nodemon seedDB.js",
+    "seed": "node seedDB.js",
     "start": "nodemon server.js",
     "test": "mocha"
   },

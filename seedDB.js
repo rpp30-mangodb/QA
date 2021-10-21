@@ -61,6 +61,8 @@ db.once('open', function() {
 });
 
 var parsePhotos = () => {
+  const photos = [];
+  var counter = 0;
   fs.createReadStream(path.resolve(__dirname, 'legacyData', 'answers_photos.csv'))
   // fs.createReadStream(path.resolve(__dirname, 'legacyData', 'test_photos.csv'))
     .pipe(csv({ }))
@@ -71,22 +73,28 @@ var parsePhotos = () => {
         'answer_id': data.answer_id,
         'url': data.url
       });
-      // save to mongo
-      photo.save((err, answer) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log(answer._id, 'saved');
-        }
-      });
+      photos.push(photo);
     })
-    .on('end', () => {
+    .on('end', async () => {
+      console.log(photos.length);
+      while (photos.length > 0) {
+        var chunk;
+        if (photos.length >= 500) {
+          chunk = photos.splice(0, 500);
+        } else {
+          chunk = photos.splice(0, photos.length); // to get remainder
+        }
+        await Photo.insertMany(chunk);
+      }
       console.log('read csv photo file');
-      parseAnswers();
+      if (photos.length === 0) {
+        parseAnswers();
+      }
     });
 };
 
 var parseAnswers = () => {
+  const answers = [];
   fs.createReadStream(path.resolve(__dirname, 'legacyData', 'answers.csv'))
   // fs.createReadStream(path.resolve(__dirname, 'legacyData', 'test_answers.csv'))
     .pipe(csv({ }))
@@ -110,22 +118,25 @@ var parseAnswers = () => {
         'helpfulness': data.helpful,
         'reported': reported
       });
-        // save to mongo
-      answer.save((err, answer) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log(answer._id, 'saved');
-        }
-      });
+      answers.push(answer);
+      if (answers.length >= 500) {
+        Answer.insertMany(answers.splice(0, 500));
+      }
     })
-    .on('end', () => {
+    .on('end', async () => {
+      console.log(answers.length);
+      while (answers.length > 0) {
+        await Answer.insertMany(answers.splice(0, answers.length));
+      }
       console.log('read csv answer file');
-      parseQuestions();
+      if (answers.length === 0) {
+        parseQuestions();
+      }
     });
 };
 
 var parseQuestions = () => {
+  const questions = [];
   fs.createReadStream(path.resolve(__dirname, 'legacyData', 'questions.csv'))
   // fs.createReadStream(path.resolve(__dirname, 'legacyData', 'test_questions.csv'))
     .pipe(csv({ }))
@@ -149,16 +160,16 @@ var parseQuestions = () => {
         'question_helpfulness': data.helpful,
         'reported': reported
       });
-        // save to mongo
-      question.save((err, answer) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log(question._id, 'saved');
-        }
-      });
+      questions.push(question);
+      if (questions.length >= 500) {
+        Question.insertMany(questions.splice(0, 500));
+      }
     })
-    .on('end', () => {
+    .on('end', async () => {
+      console.log(questions.length);
+      while (questions.length > 0) {
+        await Question.insertMany(questions.splice(0, questions.length));
+      }
       console.log('read csv question file!');
     });
 };

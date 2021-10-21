@@ -15,7 +15,7 @@ const questionSchema = new Schema({
   // 'answers': {type: Schema.Types.Mixed, required: true}
 });
 
-const Question = mongoose.model('Question', questionSchema);
+const Question = mongoose.model('Question', questionSchema, 'questions');
 // question.answers[answer.id]: answerSchema; move to controller?
 
 module.exports = Question;
