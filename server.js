@@ -140,24 +140,37 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
 
 // mark question as helpful
 app.put('/qa/questions/:question_id/helpful', (req, res) => {
-  console.log('helpful question');
-  console.log('body', req.body);
+  console.log('hit helpful question');
   console.log('params', req.params);
   const questionId = req.params.question_id;
   // increment helpfulness
-  // Question.findOneAndUpdate({question_id: questionId}, {$set: {question_helpfulness: }})
+  return questions.markQuestionHelpful(questionId)
+    .then(result => {
+      console.log(result);
+      res.status(204).end();
+    })
+    .catch(err => {
+      console.log(err);
+      res.end();
+    });
   res.status(204).end();
 });
 
 // mark question as reported
 app.put('/qa/questions/:question_id/report', (req, res) => {
-  console.log('reported question');
-  console.log('body', req.body);
+  console.log('hit reported question');
   console.log('params', req.params);
   const questionId = req.params.question_id;
   // mark reported as true
-  Question.findOneAndUpdate({question_id: questionId}, {$set: {reported: true}});
-  res.status(204).end();
+  return questions.reportQuestion(questionId)
+    .then(result => {
+      console.log(result);
+      res.status(204).end();
+    })
+    .catch(err => {
+      console.log(err);
+      res.end();
+    });
 });
 
 // mark answer as helpful
@@ -167,17 +180,31 @@ app.put('/qa/answers/:answer_id/helpful', (req, res) => {
   console.log('params', req.params);
   const answerId = req.params.answer_id;
   // increment helpfulness
-  // Answer.findOneAndUpdate({id: answerId}, {$set: {helpfulness: }});
+  return answers.markAnswerHelpful(answerId)
+    .then(result => {
+      console.log(result);
+      res.status(204).end();
+    })
+    .catch(err => {
+      console.log(err);
+      res.end();
+    });
   res.status(204).end();
 });
 
 // mark answer as reported
 app.put('/qa/answers/:answer_id/report', (req, res) => {
   console.log('reported answer');
-  console.log('body', req.body);
   console.log('params', req.params);
   const answerId = req.params.answer_id;
   // mark reported as true
-  Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}});
-  res.status(204).end();
+  answers.reportAnswer(answerId)
+    .then(result => {
+      console.log(result);
+      res.status(204).end();
+    })
+    .catch(err => {
+      console.log(err);
+      res.end();
+    });
 });

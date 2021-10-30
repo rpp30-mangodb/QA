@@ -10,4 +10,14 @@ const getAnswers = (questionId) => {
     });
 };
 
-module.exports = { getAnswers };
+const markAnswerHelpful = (answerId) => {
+  Answer.findOneAndUpdate({id: answerId}, {$inc: {helpfulness: 1}})
+    .then(result => result);
+};
+
+const reportAnswer = (answerId) => {
+  Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}})
+    .then(result => result);
+};
+
+module.exports = { getAnswers, markAnswerHelpful, reportAnswer };
