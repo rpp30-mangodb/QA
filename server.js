@@ -67,23 +67,20 @@ app.post('/qa/questions', (req, res) => {
   console.log('post question hit');
   console.log(req.body);
   const productId = req.body.product_id;
-  const body = req.body.body;
-  const name = req.body.name;
-  const email = req.body.email;
+  const { body, name, email } = req.body;
   if (productId === undefined || body === undefined || name === undefined || email === undefined || productId === undefined) {
     res.status(400).send('please send appropriate inputs');
   } else if (typeof productId !== 'number' || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string' || productId !== 'number') {
     res.status(400).send('please send appropriate inputs');
   } else {
-    Question.save({
-      // question_id: , get last id
-      product_id: productId,
-      question_body: body,
-      // question_date: get current date
-      asker_name: name,
-      asker_email: email,
-    });
-    res.status(201).send('question added');
+    return questions.postQuestion(productId, req.body)
+      .then(result => {
+        res.status(201).send('question added', result);
+      })
+      .catch(err => {
+        console.log(err);
+        res.end();
+      });
   }
 });
 
@@ -118,24 +115,21 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
   console.log('body', req.body);
   consoe.log('params', req.params);
   const questionId = req.params.question_id;
-  const body = req.params.body;
-  const name = req.params.name;
-  const email = req.params.email;
-  const photos = [];
-  if (req.params.photos) {
-    photos = req.params.photos; // sent as array?
+  const { body, name, email, photos } = req.body;
+  if (questionId === undefined || body === undefined || name === undefined || email === undefined || productId === undefined) {
+    res.status(400).send('please send appropriate inputs');
+  } else if (!Number.isInteger(parseInt(questionId)) || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string' || !Array.isArray(photos)) {
+    res.status(400).send('please send appropriate inputs');
+  } else {
+    answers.postAnswer(questionid, req.body) // callback?
+      .then(result => {
+        res.status(201).res.send('answer added', result);
+      })
+      .catch(err => {
+        console.log(err);
+        res.end();
+      });
   }
-  Answer.save({
-    // 'id': find latest id
-    question_id: questionId,
-    body: body,
-    // 'date': current date
-    answerer_name: name,
-    answerer_email: email,
-    reported: {type: Boolean, default: false}, // update when it is true
-    photos: photos
-  });
-  res.status(201).res.send('answer added');
 });
 
 // mark question as helpful
