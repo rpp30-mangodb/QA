@@ -1,4 +1,3 @@
-const express = require('express');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
@@ -6,13 +5,6 @@ const csv = require('csv-parser');
 const Answer = require('./models/answerModel');
 const Photo = require('./models/photoModel');
 const Question = require('./models/questionModel');
-
-const app = express();
-const PORT = 5000;
-
-app.listen(PORT, function () {
-  console.log(`listening on port ${PORT}`);
-});
 
 mongoose.connect('mongodb://localhost:27017/atelier', {useNewUrlParser: true, useUnifiedTopology: true});
 
@@ -55,9 +47,6 @@ db.once('open', function() {
       parsePhotos();
     }
   });
-  // parsePhotos();
-  // parseAnswers();
-  // parseQuestions();
 });
 
 var parsePhotos = () => {
@@ -98,7 +87,7 @@ var parseAnswers = () => {
   fs.createReadStream(path.resolve(__dirname, 'legacyData', 'answers.csv'))
   // fs.createReadStream(path.resolve(__dirname, 'legacyData', 'test_answers.csv'))
     .pipe(csv({ }))
-    .on('data', data => {
+    .on('data', async data => {
       // create model
       var date = parseInt(data.date_written);
       date = new Date(date).toISOString();
@@ -116,11 +105,13 @@ var parseAnswers = () => {
         'answerer_name': data.answerer_name,
         'answerer_email': data.answerer_email,
         'helpfulness': data.helpful,
-        'reported': reported
+        'reported': reported,
+        'photos': []
       });
+      console.log(data.id);
       answers.push(answer);
       if (answers.length >= 500) {
-        Answer.insertMany(answers.splice(0, 500));
+        await Answer.insertMany(answers.splice(0, 500));
       }
     })
     .on('end', async () => {
@@ -129,9 +120,9 @@ var parseAnswers = () => {
         await Answer.insertMany(answers.splice(0, answers.length));
       }
       console.log('read csv answer file');
-      if (answers.length === 0) {
-        parseQuestions();
-      }
+      // if (answers.length === 0) {
+      //   parseQuestions();
+      // }
     });
 };
 
@@ -151,15 +142,17 @@ var parseQuestions = () => {
         reported = false;
       }
       const question = new Question({
-        'id': data.id,
+        'question_id': data.id,
         'product_id': data.product_id,
         'question_body': data.body,
         'question_date': date,
         'asker_name': data.asker_name,
         'asker_email': data.asker_email,
         'question_helpfulness': data.helpful,
-        'reported': reported
+        'reported': reported,
+        'answers': {}
       });
+      console.log(data.id);
       questions.push(question);
       if (questions.length >= 500) {
         Question.insertMany(questions.splice(0, 500));

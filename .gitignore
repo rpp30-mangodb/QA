@@ -105,3 +105,6 @@ dist
 
 # Legacy API Data to seed database
 /legacyData
+
+# Mac OS
+.DS_Store
