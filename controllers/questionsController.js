@@ -1,39 +1,56 @@
 /* eslint-disable camelcase */
+const fs = require('fs');
 const Question = require('../models/questionModel');
 
 const getQuestions = (productId) => {
   // limit count to page and count ?
-  return Question.find({product_id: productId}, '-_id question_id question_body question_date asker_name question_hepfulness reported answers')
+  return Question.find({product_id: productId}, '-_id question_id question_body question_date asker_name question_helpfulness reported answers')
     .then(questions => {
       // filter out the reported questions
+      // console.log('controller questions', questions);
       return questions;
     });
 };
 
-const postQuestion = (productId, postData) => {
-// need callback to return to frontend ???
-  // use fs with promises???
-  fs.readFile('../ids/answerId.txt', utf8, (err, data) => {
+const postQuestion = (postData, cb) => {
+  fs.readFile(__dirname + '/../ids.txt', 'utf8', (err, data) => {
     if (err) {
-      console.log(err); // need a callback?
+      console.log(err);
+      cb(err);
     } else {
-      let id = data;
-      id++;
-      fs.writeFile('../ids/answerId.txt', id, err => {
+      let dataIds = data.split(',');
+      let questionData = dataIds[0].split(':');
+      let questionId = questionData[1];
+      console.log('before id', questionId);
+      questionId++;
+      console.log('after id', questionId);
+      dataIds.shift();
+      dataIds.join(',');
+      let newIds = 'questions:' + questionId + ',' + dataIds;
+      console.log(newIds);
+      fs.writeFile(__dirname + '/../ids.txt', newIds, err => {
         if (err) {
           console.log(err);
+          cb(err);
         } else {
           const date = new Date().toISOString();
           console.log(date);
-          Question.save({
-            question_id: id,
-            product_id: productId,
+          const question = new Question({
+            question_id: questionId,
+            product_id: postData.product_id,
             question_body: postData.body,
             question_date: date,
             asker_name: postData.name,
             asker_email: postData.email
-          })
-            .then(result => result); // cb to get result to front end?
+          });
+          question.save((err, result) => {
+            if (err) {
+              console.log(err);
+              cb(err);
+            } else {
+              cb(null, result);
+            }
+          });
         }
       });
     }

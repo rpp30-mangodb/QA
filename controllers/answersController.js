@@ -4,56 +4,61 @@ const Answer = require('../models/answerModel');
 
 const getAnswers = (questionId) => {
   // limit count to page and count?
-  return Answer.findOne({question_id: questionId}, '-_id id body date answerer_name helpfulness photos')
+  return Answer.find({question_id: questionId, reported: false}, '-_id id body date answerer_name helpfulness photos')
     .then(answers => {
       // filter out reported answers
       return {questionId, answers};
     });
 };
 
-const postAnswer = (questionId, postData) => {
-  // need callback to return to frontend ???
-  // use fs with promises???
-  fs.readFile('../ids/answerId.txt', utf8, (err, data) => {
+const postAnswer = (questionId, postData, cb) => {
+  fs.readFile(__dirname + '/../ids.txt', 'utf8', (err, data) => {
     if (err) {
-      console.log(err); // need a callback?
+      console.log(err);
+      cb(err);
     } else {
-      var id = data;
-      id++;
-      fs.writeFile('../ids/answerId.txt', id, err => {
+      let dataIds = data.split(','); // [questions:123, answers:332, photos:28394]
+      const questionData = dataIds.shift();
+      let answerData = dataIds[0].split(':'); // [answers, 332]
+      let answerId = answerData[1];
+      console.log('before ans id', answerId);
+      answerId++;
+      console.log('after ansid', answerId);
+      let photoData = dataIds[1].split(':'); // [photos, 24332]
+      let photoId = photoData[1];
+      console.log('before photo id', photoId);
+      let photoArray = [];
+      if (postData.photos) {
+        for (var i = 0; i < postData.photos.length; i++) {
+          photoId++;
+          photoArray.push({id: photoId, url: postData.photos[i]});
+        }
+      }
+      console.log('after ansid', photoId);
+      let newIds = questionData + ',answers:' + answerId + ',photos:' + photoId;
+      console.log(newIds);
+      fs.writeFile(__dirname + '/../ids.txt', newIds, err => {
         if (err) {
           console.log(err);
         } else {
           const date = new Date().toISOString();
           console.log(date);
-          // read and write photo ids
-          fs.readFile('../ids/photoId.txt', utf8, (err, data) => {
+          const answer = new Answer({
+            id: answerId,
+            question_id: questionId,
+            body: postData.body,
+            date: date,
+            answerer_name: postData.name,
+            answerer_email: postData.email,
+            photos: photoArray // check post answer form to check data
+          });
+          console.log('controller new answer', answer);
+          answer.save((err, result) => {
             if (err) {
-              console.log(err); // need a callback?
+              console.log(err);
+              cb(err);
             } else {
-              let id = data;
-              let photos = postData.photos;
-              photos = photos.map(photo => {
-                id++;
-                photo.id = id;
-                return photo;
-              });
-              fs.writeFile('../ids/photoId.txt', id, err => {
-                if (err) {
-                  console.log(err);
-                } else {
-                  return Answer.save({
-                    id: id,
-                    question_id: questionId,
-                    body: postData.body,
-                    date: date,
-                    answerer_name: postData.name,
-                    answerer_email: postData.email,
-                    photos: photos // check post answer form to check data
-                  })
-                    .then(result => result);
-                }
-              });
+              cb(null, result);
             }
           });
         }
@@ -63,13 +68,13 @@ const postAnswer = (questionId, postData) => {
 };
 
 const markAnswerHelpful = (answerId) => {
-  Answer.findOneAndUpdate({id: answerId}, {$inc: {helpfulness: 1}})
+  return Answer.findOneAndUpdate({id: answerId}, {$inc: {helpfulness: 1}})
     .then(result => result);
 };
 
 const reportAnswer = (answerId) => {
-  Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}})
+  return Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}})
     .then(result => result);
 };
 
-module.exports = { getAnswers, markAnswerHelpful, reportAnswer };
+module.exports = { getAnswers, postAnswer, markAnswerHelpful, reportAnswer };

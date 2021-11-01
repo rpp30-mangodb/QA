@@ -1,10 +1,9 @@
 /* eslint-disable camelcase */
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const multer = require('multer');
 const db = require('./database');
-const Question = require('./models/questionModel');
-const Answer = require('./models/answerModel');
 const questions = require('./controllers/questionsController');
 const answers = require('./controllers/answersController');
 
@@ -12,6 +11,8 @@ const PORT = 5000;
 const app = express();
 
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.listen(PORT, function () {
   console.log(`CORS-enabled web server listening on port ${PORT}`);
 });
@@ -19,9 +20,9 @@ app.listen(PORT, function () {
 // get all questions and answers for particular product id
 app.get('/qa/questions', (req, res)=> {
   console.log('get questions hit');
-  console.log('query', req.query);
+  // console.log('query', req.query);
   const { product_id, page, count } = req.query;
-  console.log('product id', product_id, 'page', page, 'count', count);
+  // console.log('product id', product_id, 'page', page, 'count', count);
   if (product_id === undefined || page === undefined || count === undefined) {
     console.log('first get questions if');
     res.status(400).res.send('please input appropriate parameters');
@@ -30,28 +31,30 @@ app.get('/qa/questions', (req, res)=> {
     console.log(typeof product_id, typeof page, typeof count);
     res.status(400).res.send('please input appropriate parameters');
   } else {
-    console.log('inside get questions else block');
+    // console.log('inside get questions else block');
     let response = {product_id: product_id, results: null};
     questions.getQuestions(product_id)
       .then(questions => {
-        console.log('questions', questions);
+        // console.log('questions', questions);
         response.results = questions;
         // filter out the reported answers
         return Promise.all(questions.map(doc => {
           return answers.getAnswers(doc.question_id);
         }))
           .then(answers => {
-            console.log('answers', answers);
+            // console.log('answers', answers);
             for (var i = 0; i < response.results.length; i++) {
               response.results[i].answers = {};
               for (var j = 0; j < answers.length; j++) {
                 if (response.results[i].question_id === answers[j].questionId) {
-                  response.results[i].answers[parseInt(answers[j].answers.id)] = answers[j].answers;
+                  if (answers[j].answers !== null) {
+                    response.results[i].answers[parseInt(answers[j].answers.id)] = answers[j].answers;
+                  }
                 }
               }
             }
-            console.log('get questions response', response);
-            console.log('sample qet questions answer object', response.results[0].answers);
+            // console.log('get questions response', response);
+            // console.log('sample qet questions answer object', response.results[0].answers);
             res.status(200).send(response);
           })
           .catch(err => {
@@ -65,43 +68,49 @@ app.get('/qa/questions', (req, res)=> {
 // add a question
 app.post('/qa/questions', (req, res) => {
   console.log('post question hit');
-  console.log(req.body);
-  const productId = req.body.product_id;
-  const { body, name, email } = req.body;
-  if (productId === undefined || body === undefined || name === undefined || email === undefined || productId === undefined) {
+  console.log('req', req.body);
+  const { body, name, email, product_id } = req.body;
+  if (product_id === undefined || body === undefined || name === undefined || email === undefined) {
     res.status(400).send('please send appropriate inputs');
-  } else if (typeof productId !== 'number' || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string' || productId !== 'number') {
+  } else if (!Number.isInteger(parseInt(product_id)) || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string') {
     res.status(400).send('please send appropriate inputs');
   } else {
-    return questions.postQuestion(productId, req.body)
-      .then(result => {
-        res.status(201).send('question added', result);
-      })
-      .catch(err => {
+    console.log('post ques else');
+    questions.postQuestion(req.body, (err, result) => {
+      if (err) {
         console.log(err);
         res.end();
-      });
+      } else {
+        console.log('post ques result', result);
+        res.status(201).send('question added');
+      }
+    });
   }
 });
 
 // get all answers for a particular question id
 app.get('/qa/questions/:question_id/answers', (req, res) => {
   console.log('hit get answers');
-  console.log('params', req.params); // question_id
-  console.log('query', req.query); // page: 1, count: 100
+  // console.log('params', req.params); // question_id
+  // console.log('query', req.query); // page: 1, count: 100
   const questionId = req.params.question_id;
   const { page, count } = req.query;
   let response = {question: questionId, page: parseInt(page), count: parseInt(count), results: []};
   return answers.getAnswers(questionId)
     .then(answers => {
-      console.log(answers);
-      var copyAnswers = {...answers.answers._doc};
-      console.log('copy', copyAnswers);
-      copyAnswers['answer_id'] = copyAnswers.id;
-      delete copyAnswers.id;
-      console.log('post delete copy', copyAnswers);
-      response.results.push(copyAnswers);
-      res.status(200).send(response);
+      // console.log('ques id answers', answers.answers);
+      // console.log('1 ques id answer', answers.answers[0]);
+      if (answers.answers.length > 0) {
+        answers.answers.forEach(ans => {
+          var copyAnswer = {...ans._doc};
+          // console.log('copy', copyAnswer);
+          copyAnswer['answer_id'] = copyAnswer.id;
+          delete copyAnswer.id;
+          // console.log('post delete copy', copyAnswer);
+          response.results.push(copyAnswer);
+        });
+        res.status(200).send(response);
+      }
     })
     .catch(err => {
       console.log(err);
@@ -113,22 +122,23 @@ app.get('/qa/questions/:question_id/answers', (req, res) => {
 app.post('/qa/questions/:question_id/answers', (req, res) => {
   console.log('post answer');
   console.log('body', req.body);
-  consoe.log('params', req.params);
+  console.log('params', req.params);
   const questionId = req.params.question_id;
   const { body, name, email, photos } = req.body;
-  if (questionId === undefined || body === undefined || name === undefined || email === undefined || productId === undefined) {
+  if (questionId === undefined || body === undefined || name === undefined || email === undefined) {
     res.status(400).send('please send appropriate inputs');
-  } else if (!Number.isInteger(parseInt(questionId)) || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string' || !Array.isArray(photos)) {
+  } else if (!Number.isInteger(parseInt(questionId)) || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string') {
     res.status(400).send('please send appropriate inputs');
   } else {
-    answers.postAnswer(questionid, req.body) // callback?
-      .then(result => {
-        res.status(201).res.send('answer added', result);
-      })
-      .catch(err => {
+    answers.postAnswer(questionId, req.body, (err, result) => {
+      if (err) {
         console.log(err);
         res.end();
-      });
+      } else {
+        console.log('post ans result', result);
+        res.status(201).send('answer added');
+      }
+    });
   }
 });
 
@@ -170,7 +180,6 @@ app.put('/qa/questions/:question_id/report', (req, res) => {
 // mark answer as helpful
 app.put('/qa/answers/:answer_id/helpful', (req, res) => {
   console.log('helpful answer');
-  console.log('body', req.body);
   console.log('params', req.params);
   const answerId = req.params.answer_id;
   // increment helpfulness
