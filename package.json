@@ -7,7 +7,7 @@
     "lint": "eslint . --fix",
     "seed": "node seedDB.js",
     "start": "nodemon server.js",
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,9 @@
   },
   "homepage": "https://github.com/rpp30-mangodb/QA#readme",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "express": "^4.17.1",

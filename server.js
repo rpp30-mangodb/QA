@@ -25,11 +25,11 @@ app.get('/qa/questions', (req, res)=> {
   // console.log('product id', product_id, 'page', page, 'count', count);
   if (product_id === undefined || page === undefined || count === undefined) {
     console.log('first get questions if');
-    res.status(400).res.send('please input appropriate parameters');
+    res.status(400).send('please input appropriate parameters');
   } else if (!Number.isInteger(parseInt(product_id)) || !Number.isInteger(parseInt(page)) || !Number.isInteger(parseInt(count))) {
     console.log('second get questions if');
     console.log(typeof product_id, typeof page, typeof count);
-    res.status(400).res.send('please input appropriate parameters');
+    res.status(400).send('please input appropriate parameters');
   } else {
     // console.log('inside get questions else block');
     let response = {product_id: product_id, results: null};
@@ -76,15 +76,15 @@ app.post('/qa/questions', (req, res) => {
     res.status(400).send('please send appropriate inputs');
   } else {
     console.log('post ques else');
-    questions.postQuestion(req.body, (err, result) => {
-      if (err) {
-        console.log(err);
-        res.end();
-      } else {
+    return questions.postQuestion(req.body)
+      .then(result => {
         console.log('post ques result', result);
         res.status(201).send('question added');
-      }
-    });
+      })
+      .catch(err => {
+        console.log(err);
+        res.end();
+      });
   }
 });
 
