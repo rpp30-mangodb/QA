@@ -4,72 +4,107 @@ const Answer = require('../models/answerModel');
 
 const getAnswers = (questionId) => {
   // limit count to page and count?
-  return Answer.findOne({question_id: questionId}, '-_id id body date answerer_name helpfulness photos')
+  return Answer.find({question_id: questionId, reported: false}, '-_id id body date answerer_name helpfulness photos')
     .then(answers => {
-      // filter out reported answers
       return {questionId, answers};
     });
 };
 
-const postAnswer = (questionId, postData) => {
-  // need callback to return to frontend ???
-  // use fs with promises???
-  fs.readFile('../ids/answerId.txt', utf8, (err, data) => {
+// post answer helper functions
+const readIds = (path) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8', (err, data) => {
+      if (err) {
+        console.log(err);
+        reject(err);
+        return;
+      } else {
+        let dataIds = data.split(','); // [questions:123, answers:332, photos:28394]
+        const questionData = dataIds.shift();
+        let answerData = dataIds[0].split(':'); // [answers, 332]
+        let answerId = answerData[1];
+        console.log('before ans id', answerId);
+        let photoData = dataIds[1].split(':'); // [photos, 24332]
+        let photoId = photoData[1];
+        console.log('before photo id', photoId);
+        const idData = { questionData, answerId, photoId };
+        resolve(idData);
+      }
+    });
+  });
+};
+
+const writeIds = (path, postData, idData) => {
+  const questionData = idData.questionData;
+  const answerId = idData.answerId + 1;
+  console.log('after ansid', answerId);
+  let photoId = idData.photoId;
+  let photoArray = [];
+  if (postData.photos) {
+    for (var i = 0; i < postData.photos.length; i++) {
+      photoId++;
+      photoArray.push({id: photoId, url: postData.photos[i]});
+    }
+  }
+  console.log('after photoId', photoId);
+  let newIds = questionData + ',answers:' + answerId + ',photos:' + photoId;
+  console.log(newIds);
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path, newIds, (err, result) => {
+      if (err) {
+        console.log(err);
+        reject(err);
+      } else {
+        const answerAndPhotosData = {answerId, photoArray};
+        resolve(answerAndPhotosData);
+      }
+    });
+  });
+};
+
+const saveDoc = (questionId, postData, ansAndPhotoData) => {
+  const date = new Date().toISOString();
+  console.log(date);
+  const answer = new Answer({
+    id: ansAndPhotoData.answerId,
+    question_id: questionId,
+    body: postData.body,
+    date: date,
+    answerer_name: postData.name,
+    answerer_email: postData.email,
+    photos: ansAndPhotoData.photoArray // check post answer form to check data
+  });
+  console.log('controller new answer', answer);
+  answer.save((err, result) => {
     if (err) {
-      console.log(err); // need a callback?
+      console.log(err);
+      reject(err);
     } else {
-      var id = data;
-      id++;
-      fs.writeFile('../ids/answerId.txt', id, err => {
-        if (err) {
-          console.log(err);
-        } else {
-          const date = new Date().toISOString();
-          console.log(date);
-          // read and write photo ids
-          fs.readFile('../ids/photoId.txt', utf8, (err, data) => {
-            if (err) {
-              console.log(err); // need a callback?
-            } else {
-              let id = data;
-              let photos = postData.photos;
-              photos = photos.map(photo => {
-                id++;
-                photo.id = id;
-                return photo;
-              });
-              fs.writeFile('../ids/photoId.txt', id, err => {
-                if (err) {
-                  console.log(err);
-                } else {
-                  return Answer.save({
-                    id: id,
-                    question_id: questionId,
-                    body: postData.body,
-                    date: date,
-                    answerer_name: postData.name,
-                    answerer_email: postData.email,
-                    photos: photos // check post answer form to check data
-                  })
-                    .then(result => result);
-                }
-              });
-            }
-          });
-        }
-      });
+      resolve(result);
     }
   });
 };
 
+// post answer utilizing helper functions
+const postAnswer = (questionId, postData, cb) => {
+  return readIds(__dirname + '/../ids.txt')
+    .then(idsData => {
+      return writeIds(__dirname + '/../ids.txt', idsData);
+    })
+    .then(ansAndPhotoData => {
+      return saveDoc(questionId, postData, ansAndPhotoData);
+    })
+    .catch(err => console.log(err));
+};
+
 const markAnswerHelpful = (answerId) => {
-  Answer.findOneAndUpdate({id: answerId}, {$inc: {helpfulness: 1}})
+  return Answer.findOneAndUpdate({id: answerId}, {$inc: {helpfulness: 1}})
     .then(result => result);
 };
 
 const reportAnswer = (answerId) => {
-  Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}})
+  return Answer.findOneAndUpdate({id: answerId}, {$set: {reported: true}})
     .then(result => result);
 };
 
-module.exports = { getAnswers, markAnswerHelpful, reportAnswer };
+module.exports = { getAnswers, readIds, writeIds, saveDoc, postAnswer, markAnswerHelpful, reportAnswer };

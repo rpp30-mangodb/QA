@@ -12,10 +12,10 @@ const questionSchema = new Schema({
   'asker_email': {type: String, required: true},
   'question_helpfulness': {type: Number, required: false, default: 0},
   'reported': {type: Boolean, required: false, default: false}, // update when it is true
-  'answers': {type: Schema.Types.Mixed, required: true}
+  'answers': {type: Schema.Types.Mixed, required: false}
 });
 
-const Question = mongoose.model('Question', questionSchema, 'questions');
+const Question = mongoose.model('Question', questionSchema, 'questions3');
 // question.answers[answer.id]: answerSchema; move to controller?
 
 module.exports = Question;
