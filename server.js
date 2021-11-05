@@ -130,15 +130,15 @@ app.post('/qa/questions/:question_id/answers', (req, res) => {
   } else if (!Number.isInteger(parseInt(questionId)) || typeof body !== 'string' || typeof name !== 'string' || typeof email !== 'string') {
     res.status(400).send('please send appropriate inputs');
   } else {
-    answers.postAnswer(questionId, req.body, (err, result) => {
-      if (err) {
-        console.log(err);
-        res.end();
-      } else {
+    return answers.postAnswer(questionId, req.body)
+      .then(result => {
         console.log('post ans result', result);
         res.status(201).send('answer added');
-      }
-    });
+      })
+      .catch(err => {
+        console.log(err);
+        res.end();
+      });
   }
 });
 
@@ -179,7 +179,7 @@ app.put('/qa/questions/:question_id/report', (req, res) => {
 
 // mark answer as helpful
 app.put('/qa/answers/:answer_id/helpful', (req, res) => {
-  console.log('helpful answer');
+  console.log('hit helpful answer');
   console.log('params', req.params);
   const answerId = req.params.answer_id;
   // increment helpfulness

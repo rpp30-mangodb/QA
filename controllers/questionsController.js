@@ -12,41 +12,8 @@ const getQuestions = (productId) => {
 };
 
 // post question helpers
-const readIds = (path) => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, data) => {
-      if (err) {
-        console.log(err);
-        reject(err);
-        return;
-      } else {
-        let dataIds = data.split(',');
-        let questionData = dataIds[0].split(':');
-        let questionId = questionData[1];
-        console.log('before id', questionId);
-        const idData = { questionId, dataIds };
-        resolve(idData);
-      }
-    });
-  });
-};
-
-const writeIds = (path, idData) => {
-  const questionId = parseInt(idData.questionId) + 1;
-  console.log('after id', questionId);
-  const dataIds = idData.dataIds.join(',');
-  let newIds = 'questions:' + questionId + ',' + dataIds;
-  console.log(newIds);
-  return new Promise((resolve, reject) => {
-    fs.writeFile(path, newIds, (err, result) => {
-      if (err) {
-        console.log(err);
-        reject(err);
-      } else {
-        resolve(questionId);
-      }
-    });
-  });
+const getLastQuestionId = () => {
+  return Question.find({}).sort({'question_id': -1}).limit(1);
 };
 
 const saveDoc = (postData, questionId) => {
@@ -74,11 +41,15 @@ const saveDoc = (postData, questionId) => {
 
 // post question utilizing helper functions
 const postQuestion = (postData) => {
-  return readIds(__dirname + '/../ids.txt')
-    .then((idsData) => {
-      return writeIds(__dirname + '/../ids.txt', idsData);
+  let questionId;
+  return getLastQuestionId()
+    .then(doc => {
+      questionId = doc[0].question_id;
+      console.log('before ques id', questionId);
+      questionId++;
+      console.log('after ques id', questionId);
     })
-    .then(questionId => {
+    .then(() => {
       return saveDoc(postData, questionId);
     })
     .catch(err => console.log(err));
@@ -94,4 +65,4 @@ const reportQuestion = (questionId) => {
     .then(result => result);
 };
 
-module.exports = { getQuestions, readIds, writeIds, saveDoc, postQuestion, markQuestionHelpful, reportQuestion };
+module.exports = { getQuestions, getLastQuestionId, saveDoc, postQuestion, markQuestionHelpful, reportQuestion };

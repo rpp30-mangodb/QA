@@ -14,5 +14,7 @@ const answerSchema = new Schema({
 });
 
 const Answer = mongoose.model('Answer', answerSchema, 'answersWithPhotos3');
+// stress testing with answersWithPhotos4
+// const Answer = mongoose.model('Answer', answerSchema, 'answersWithPhotos4');
 
 module.exports = Answer;

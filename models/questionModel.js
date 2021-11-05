@@ -16,6 +16,8 @@ const questionSchema = new Schema({
 });
 
 const Question = mongoose.model('Question', questionSchema, 'questions3');
+// stress testing with questions4
+// const Question = mongoose.model('Question', questionSchema, 'questions4');
 // question.answers[answer.id]: answerSchema; move to controller?
 
 module.exports = Question;
