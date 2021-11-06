@@ -11,90 +11,87 @@ const getAnswers = (questionId) => {
 };
 
 // post answer helper functions
-const readIds = (path) => {
+const getLastPhotoId = () => {
+  return Answer.find({}).sort({'photos.id': -1}).limit(1);
+};
+
+const getLastAnswerId = () => {
+  return Answer.find({}).sort({'id': -1}).limit(1);
+};
+
+const saveDoc = (questionId, postData, answerId, photoArray) => {
   return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, data) => {
+    const date = new Date().toISOString();
+    console.log(date);
+    const answer = new Answer({
+      id: answerId,
+      question_id: questionId,
+      body: postData.body,
+      date: date,
+      answerer_name: postData.name,
+      answerer_email: postData.email,
+      photos: photoArray
+    });
+    console.log('controller new answer', answer);
+    answer.save((err, result) => {
       if (err) {
         console.log(err);
         reject(err);
-        return;
       } else {
-        let dataIds = data.split(','); // [questions:123, answers:332, photos:28394]
-        const questionData = dataIds.shift();
-        let answerData = dataIds[0].split(':'); // [answers, 332]
-        let answerId = answerData[1];
-        console.log('before ans id', answerId);
-        let photoData = dataIds[1].split(':'); // [photos, 24332]
-        let photoId = photoData[1];
-        console.log('before photo id', photoId);
-        const idData = { questionData, answerId, photoId };
-        resolve(idData);
+        resolve(result);
       }
     });
   });
 };
 
-const writeIds = (path, postData, idData) => {
-  const questionData = idData.questionData;
-  const answerId = idData.answerId + 1;
-  console.log('after ansid', answerId);
-  let photoId = idData.photoId;
-  let photoArray = [];
-  if (postData.photos) {
-    for (var i = 0; i < postData.photos.length; i++) {
-      photoId++;
-      photoArray.push({id: photoId, url: postData.photos[i]});
-    }
-  }
-  console.log('after photoId', photoId);
-  let newIds = questionData + ',answers:' + answerId + ',photos:' + photoId;
-  console.log(newIds);
-  return new Promise((resolve, reject) => {
-    fs.writeFile(path, newIds, (err, result) => {
-      if (err) {
-        console.log(err);
-        reject(err);
-      } else {
-        const answerAndPhotosData = {answerId, photoArray};
-        resolve(answerAndPhotosData);
-      }
-    });
-  });
-};
-
-const saveDoc = (questionId, postData, ansAndPhotoData) => {
-  const date = new Date().toISOString();
-  console.log(date);
-  const answer = new Answer({
-    id: ansAndPhotoData.answerId,
-    question_id: questionId,
-    body: postData.body,
-    date: date,
-    answerer_name: postData.name,
-    answerer_email: postData.email,
-    photos: ansAndPhotoData.photoArray // check post answer form to check data
-  });
-  console.log('controller new answer', answer);
-  answer.save((err, result) => {
-    if (err) {
-      console.log(err);
-      reject(err);
-    } else {
-      resolve(result);
-    }
-  });
-};
 
 // post answer utilizing helper functions
-const postAnswer = (questionId, postData, cb) => {
-  return readIds(__dirname + '/../ids.txt')
-    .then(idsData => {
-      return writeIds(__dirname + '/../ids.txt', idsData);
-    })
-    .then(ansAndPhotoData => {
-      return saveDoc(questionId, postData, ansAndPhotoData);
-    })
-    .catch(err => console.log(err));
+const postAnswer = (questionId, postData) => {
+  let answerId, photoId;
+  let photoArray = [];
+  if (postData.photos.length > 0) {
+    return getLastPhotoId()
+      .then(photoDoc => {
+        console.log('photoDoc', photoDoc[0]);
+        console.log('photos doc', photoDoc[0].photos);
+        photoDoc[0].photos.sort((a, b) => b.id - a.id);
+        photoId = photoDoc[0].photos[0].id;
+        console.log('before photo id', photoId);
+        for (var i = 0; i < postData.photos.length; i++) {
+          photoId++;
+          let photo = {id: photoId, url: postData.photos[i]};
+          photoArray.push(photo);
+        }
+        console.log('after photo id', photoId);
+      })
+      .then(() => {
+        return getLastAnswerId()
+          .then(doc => {
+            console.log('answer doc yes photo', doc);
+            answerId = doc[0].id;
+            console.log('before ans id', answerId);
+            answerId++;
+            console.log('after ans id', answerId);
+          })
+          .then(() => {
+            return saveDoc(questionId, postData, answerId, photoArray);
+          })
+          .catch(err => console.log(err));
+      });
+  } else {
+    return getLastAnswerId()
+      .then(doc => {
+        console.log('answer doc no photo', doc);
+        answerId = doc[0].id;
+        console.log('before ans id', answerId);
+        answerId++;
+        console.log('after ans id', answerId);
+      })
+      .then(() => {
+        return saveDoc(questionId, postData, answerId);
+      })
+      .catch(err => console.log(err));
+  }
 };
 
 const markAnswerHelpful = (answerId) => {
@@ -107,4 +104,4 @@ const reportAnswer = (answerId) => {
     .then(result => result);
 };
 
-module.exports = { getAnswers, readIds, writeIds, saveDoc, postAnswer, markAnswerHelpful, reportAnswer };
+module.exports = { getAnswers, getLastAnswerId, getLastPhotoId, saveDoc, postAnswer, markAnswerHelpful, reportAnswer };
