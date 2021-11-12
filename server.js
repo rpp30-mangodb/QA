@@ -18,7 +18,7 @@ app.listen(PORT, function () {
 });
 
 // get all questions and answers for particular product id
-app.get('api/qa/questions', (req, res)=> {
+app.get('/api/qa/questions', (req, res)=> {
   console.log('get questions hit');
   // console.log('query', req.query);
   const { product_id, page, count } = req.query;
@@ -66,7 +66,7 @@ app.get('api/qa/questions', (req, res)=> {
 });
 
 // add a question
-app.post('api/qa/questions', (req, res) => {
+app.post('/api/qa/questions', (req, res) => {
   console.log('post question hit');
   console.log('req', req.body);
   const { body, name, email, product_id } = req.body;
@@ -89,7 +89,7 @@ app.post('api/qa/questions', (req, res) => {
 });
 
 // get all answers for a particular question id
-app.get('api/qa/questions/:question_id/answers', (req, res) => {
+app.get('/api/qa/questions/:question_id/answers', (req, res) => {
   console.log('hit get answers');
   // console.log('params', req.params); // question_id
   // console.log('query', req.query); // page: 1, count: 100
@@ -119,7 +119,7 @@ app.get('api/qa/questions/:question_id/answers', (req, res) => {
 });
 
 // add an answer for a particular question id
-app.post('api/qa/questions/:question_id/answers', (req, res) => {
+app.post('/api/qa/questions/:question_id/answers', (req, res) => {
   console.log('post answer');
   console.log('body', req.body);
   console.log('params', req.params);
@@ -143,7 +143,7 @@ app.post('api/qa/questions/:question_id/answers', (req, res) => {
 });
 
 // mark question as helpful
-app.put('api/qa/questions/:question_id/helpful', (req, res) => {
+app.put('/api/qa/questions/:question_id/helpful', (req, res) => {
   console.log('hit helpful question');
   console.log('params', req.params);
   const questionId = req.params.question_id;
@@ -161,7 +161,7 @@ app.put('api/qa/questions/:question_id/helpful', (req, res) => {
 });
 
 // mark question as reported
-app.put('api/qa/questions/:question_id/report', (req, res) => {
+app.put('/api/qa/questions/:question_id/report', (req, res) => {
   console.log('hit reported question');
   console.log('params', req.params);
   const questionId = req.params.question_id;
@@ -178,7 +178,7 @@ app.put('api/qa/questions/:question_id/report', (req, res) => {
 });
 
 // mark answer as helpful
-app.put('api/qa/answers/:answer_id/helpful', (req, res) => {
+app.put('/api/qa/answers/:answer_id/helpful', (req, res) => {
   console.log('hit helpful answer');
   console.log('params', req.params);
   const answerId = req.params.answer_id;
@@ -196,7 +196,7 @@ app.put('api/qa/answers/:answer_id/helpful', (req, res) => {
 });
 
 // mark answer as reported
-app.put('api/qa/answers/:answer_id/report', (req, res) => {
+app.put('/api/qa/answers/:answer_id/report', (req, res) => {
   console.log('reported answer');
   console.log('params', req.params);
   const answerId = req.params.answer_id;
